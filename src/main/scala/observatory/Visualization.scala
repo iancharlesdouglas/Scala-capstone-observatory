@@ -13,6 +13,20 @@ object Visualization {
     * @return The predicted temperature at `location`
     */
   def predictTemperature(temperatures: Iterable[(Location, Double)], location: Location): Double = {
+
+    def square(value : Double) = value * value
+
+    def findClosest(neighbours : Int) : Iterable[(Location, Double)] =
+      temperatures.map(t => (t, square(location.lat - t._1.lat) + square(location.lon - t._1.lon)))
+        .toSeq.sortBy(_._2).reverse
+        .take(neighbours)
+        .map(_._1)
+
+    def inverseDistanceWeighting(location1 : Location, location2 : Location, power : Double = 2d) : Double =
+      Math.pow(1d / distanceBetween(location1, location2), power)
+
+    def distanceBetween(location1 : Location, location2 : Location) = ???
+    
     ???
   }
 
