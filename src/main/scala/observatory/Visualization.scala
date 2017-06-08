@@ -1,6 +1,7 @@
 package observatory
 
 import com.sksamuel.scrimage.{Image, Pixel}
+import java.lang.Math._
 
 /**
   * 2nd milestone: basic visualization
@@ -14,20 +15,26 @@ object Visualization {
     */
   def predictTemperature(temperatures: Iterable[(Location, Double)], location: Location): Double = {
 
-    def square(value : Double) = value * value
+    val RadiusOfEarth = 6371d
+    val NumNeighbours = 5
+
+    def distanceBetweenGreatCircleMethod(loc1 : Location, loc2 : Location) =
+      acos(sin(toRadians(loc1.lat)) * sin(toRadians(loc2.lat)) +
+        cos(toRadians(loc1.lat)) * cos(toRadians(loc2.lat)) * cos(toRadians(loc2.lon) - toRadians(loc1.lon))) * RadiusOfEarth
+
+    //def square(value : Double) = value * value
 
     def findClosest(neighbours : Int) : Iterable[(Location, Double)] =
-      temperatures.map(t => (t, square(location.lat - t._1.lat) + square(location.lon - t._1.lon)))
+      temperatures.map(t => (t, abs(distanceBetweenGreatCircleMethod(t._1, location))))     //square(location.lat - t._1.lat) + square(location.lon - t._1.lon)))
         .toSeq.sortBy(_._2).reverse
         .take(neighbours)
         .map(_._1)
 
-    def inverseDistanceWeighting(location1 : Location, location2 : Location, power : Double = 2d) : Double =
-      Math.pow(1d / distanceBetween(location1, location2), power)
+    def inverseDistanceWeighting(loc1: Location, loc2: Location, power: Double = 2d): Double =
+      pow(1d / distanceBetweenGreatCircleMethod(loc1, loc2), power)
 
-    def distanceBetween(location1 : Location, location2 : Location) = ???
-    
-    ???
+    val closest = findClosest(NumNeighbours)
+    closest.map(c => inverseDistanceWeighting(c._1, location) * c._2).sum / NumNeighbours
   }
 
   /**
