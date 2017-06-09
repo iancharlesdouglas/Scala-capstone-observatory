@@ -43,7 +43,26 @@ object Visualization {
     * @return The color that corresponds to `value`, according to the color scale defined by `points`
     */
   def interpolateColor(points: Iterable[(Double, Color)], value: Double): Color = {
-    ???
+
+    def findBounds(bounds: List[(Double, Color)], prevBound: (Double, Color)): ((Double, Color), (Double, Color)) = {
+      if (value < bounds.head._1)
+        findBounds(bounds.tail, bounds.head)
+      else if (value == bounds.head._1)
+        (bounds.head, bounds.head)
+      else
+        (bounds.head, prevBound)
+    }
+
+    val pointsArr = points.toArray
+    val safeTemp = max(pointsArr(0)._1, min(points.last._1, value))
+
+    val (lower, upper) = findBounds(points.toList, points.head)
+
+    val portion = (value - lower._1) / (upper._1 - lower._1)
+
+    Color((portion * (upper._2.red - lower._2.red) + lower._2.red).toInt,
+      (portion * (upper._2.green - lower._2.green) + lower._2.green).toInt,
+      (portion * (upper._2.blue - lower._2.blue) + lower._2.blue).toInt)
   }
 
   /**
