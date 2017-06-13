@@ -1,7 +1,10 @@
 package observatory
 
+import java.awt.image.BufferedImage
+
 import com.sksamuel.scrimage.{Image, Pixel}
 import java.lang.Math._
+import scala.collection
 
 /**
   * 2nd milestone: basic visualization
@@ -16,25 +19,22 @@ object Visualization {
   def predictTemperature(temperatures: Iterable[(Location, Double)], location: Location): Double = {
 
     val RadiusOfEarth = 6371d
-    val NumNeighbours = 5
+    val NumNeighbours = 2
+    val Power = 2d
 
     def distanceBetweenGreatCircleMethod(loc1 : Location, loc2 : Location) =
       acos(sin(toRadians(loc1.lat)) * sin(toRadians(loc2.lat)) +
         cos(toRadians(loc1.lat)) * cos(toRadians(loc2.lat)) * cos(toRadians(loc2.lon) - toRadians(loc1.lon))) * RadiusOfEarth
 
-    //def square(value : Double) = value * value
-
     def findClosest(neighbours : Int) : Iterable[(Location, Double)] =
-      temperatures.map(t => (t, abs(distanceBetweenGreatCircleMethod(t._1, location))))     //square(location.lat - t._1.lat) + square(location.lon - t._1.lon)))
-        .toSeq.sortBy(_._2).reverse
+      temperatures.map(t => (t, abs(distanceBetweenGreatCircleMethod(t._1, location))))
+        .toSeq.sortBy(_._2)
         .take(neighbours)
         .map(_._1)
 
-    def inverseDistanceWeighting(loc1: Location, loc2: Location, power: Double = 2d): Double =
-      pow(1d / distanceBetweenGreatCircleMethod(loc1, loc2), power)
+    val closest = findClosest(NumNeighbours).map(c => (c, abs(distanceBetweenGreatCircleMethod(c._1, location))))
 
-    val closest = findClosest(NumNeighbours)
-    closest.map(c => inverseDistanceWeighting(c._1, location) * c._2).sum / NumNeighbours
+    closest.map(c => c._1._2 / pow(c._2, Power)).sum / closest.map(c => 1d / pow(c._2, Power)).sum
   }
 
   /**
@@ -71,7 +71,16 @@ object Visualization {
     * @return A 360×180 image where each pixel shows the predicted temperature at its location
     */
   def visualize(temperatures: Iterable[(Location, Double)], colors: Iterable[(Double, Color)]): Image = {
-    ???
+    val pixels = new Array[Pixel](360 * 180)
+
+    for (x <- 0 until 360; y <- 0 until 180) {
+      val longit = x - 180
+      val latit = 90 - y
+      val temp = predictTemperature(temperatures, Location(latit, longit))
+      val colour = interpolateColor(colors, temp)
+      pixels(x * 360 + y) = Pixel(colour.red, colour.green, colour.blue, 255)
+    }
+    Image(360, 180, pixels)
   }
 
 }
