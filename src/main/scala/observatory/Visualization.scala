@@ -44,11 +44,11 @@ object Visualization {
     */
   def interpolateColor(points: Iterable[(Double, Color)], value: Double): Color = {
 
-    def findBounds(bounds: List[(Double, Color)], prevBound: (Double, Color)): ((Double, Color), (Double, Color)) = {
-      if (value < bounds.head._1)
-        findBounds(bounds.tail, bounds.head)
-      else if (value == bounds.head._1)
-        (bounds.head, bounds.head)
+    def findBounds(bounds: List[(Double, Color)], prevBound: (Double, Color), temp: Double): ((Double, Color), (Double, Color)) = {
+      if (temp >= bounds.head._1)
+        findBounds(bounds.tail, bounds.head, temp)
+      else if (temp == bounds.head._1)
+        (bounds.head, prevBound)
       else
         (bounds.head, prevBound)
     }
@@ -56,13 +56,13 @@ object Visualization {
     val pointsArr = points.toArray
     val safeTemp = max(pointsArr(0)._1, min(points.last._1, value))
 
-    val (lower, upper) = findBounds(points.toList, points.head)
+    val (lower, upper) = findBounds(points.toList, points.head, safeTemp)
 
-    val portion = (value - lower._1) / (upper._1 - lower._1)
+    val portion = (safeTemp - lower._1) / (upper._1 - lower._1)
 
-    Color((portion * (upper._2.red - lower._2.red) + lower._2.red).toInt,
-      (portion * (upper._2.green - lower._2.green) + lower._2.green).toInt,
-      (portion * (upper._2.blue - lower._2.blue) + lower._2.blue).toInt)
+    Color(Math.round(portion * (upper._2.red - lower._2.red) + lower._2.red).toInt,
+      Math.round(portion * (upper._2.green - lower._2.green) + lower._2.green).toInt,
+      Math.round(portion * (upper._2.blue - lower._2.blue) + lower._2.blue).toInt)
   }
 
   /**
@@ -71,16 +71,22 @@ object Visualization {
     * @return A 360×180 image where each pixel shows the predicted temperature at its location
     */
   def visualize(temperatures: Iterable[(Location, Double)], colors: Iterable[(Double, Color)]): Image = {
-    val pixels = new Array[Pixel](360 * 180)
 
-    for (x <- 0 until 360; y <- 0 until 180) {
-      val longit = x - 180
-      val latit = 90 - y
-      val temp = predictTemperature(temperatures, Location(latit, longit))
+    val Width = 360
+    val Height = 180
+    val HalfWidth = Width / 2
+    val HalfHeight = Height / 2
+
+    val pixels = new Array[Pixel](Width * Height)
+
+    for (x <- 0 until Width; y <- 0 until Height) {
+      //val longit =
+      //val latit =
+      val temp = predictTemperature(temperatures, Location(HalfHeight - y, x - HalfWidth))
       val colour = interpolateColor(colors, temp)
-      pixels(x * 360 + y) = Pixel(colour.red, colour.green, colour.blue, 255)
+      pixels(x * Width + y) = Pixel(colour.red, colour.green, colour.blue, 255)
     }
-    Image(360, 180, pixels)
+    Image(Width, Height, pixels)
   }
 
 }
