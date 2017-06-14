@@ -19,7 +19,7 @@ object Visualization {
   def predictTemperature(temperatures: Iterable[(Location, Double)], location: Location): Double = {
 
     val RadiusOfEarth = 6371d
-    val NumNeighbours = 2
+    val NumNeighbours = 5
     val Power = 2d
 
     def distanceBetweenGreatCircleMethod(loc1 : Location, loc2 : Location) =
@@ -45,10 +45,10 @@ object Visualization {
   def interpolateColor(points: Iterable[(Double, Color)], value: Double): Color = {
 
     def findBounds(bounds: List[(Double, Color)], prevBound: (Double, Color), temp: Double): ((Double, Color), (Double, Color)) = {
-      if (temp >= bounds.head._1)
+      if (temp >= bounds.head._1 && !bounds.tail.isEmpty)
         findBounds(bounds.tail, bounds.head, temp)
-      else if (temp == bounds.head._1)
-        (bounds.head, prevBound)
+      /*else if (temp >= bounds.head._1 && bounds.tail.isEmpty)
+        (bounds.head, prevBound)*/
       else
         (bounds.head, prevBound)
     }
@@ -77,14 +77,15 @@ object Visualization {
     val HalfWidth = Width / 2
     val HalfHeight = Height / 2
 
-    val pixels = new Array[Pixel](Width * Height)
+    val pixels = new Array[Pixel](Width * Height)//.toSeq.par
+
 
     for (x <- 0 until Width; y <- 0 until Height) {
       //val longit =
       //val latit =
       val temp = predictTemperature(temperatures, Location(HalfHeight - y, x - HalfWidth))
       val colour = interpolateColor(colors, temp)
-      pixels(x * Width + y) = Pixel(colour.red, colour.green, colour.blue, 255)
+      pixels(y * Width + x) = Pixel(colour.red, colour.green, colour.blue, 255)
     }
     Image(Width, Height, pixels)
   }

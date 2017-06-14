@@ -21,6 +21,17 @@ class VisualizationTest extends FunSuite with Checkers {
       "Diff. in temps between sub-tropical location and equatorial station should be less than between it and the North Pole")
   }
 
+  test("Point halfway between two temperature readings will have half the value") {
+
+    val stationA = (Location(10, 0), 20d)
+    val stationB = (Location(-10, 0), 0d)
+    val midpoint = Location(0, 0)
+
+    val midpointTemp = Visualization.predictTemperature(Seq(stationA, stationB), midpoint)
+
+    assert(midpointTemp == 10d)
+  }
+
   test("Temperature of 50 degrees will have 255 for red and a proportionate amount of green and blue") {
 
     val colorScale = Seq((32d, Color(255, 0, 0)), (60d, Color(255, 255, 255)))
@@ -69,6 +80,20 @@ class VisualizationTest extends FunSuite with Checkers {
     assert(Color(255, 0, 0) == interpolatedColor)
   }
 
+  test("Image with 12 stations is returned as expected") {
+
+    val stations = Seq((Location(10, -10), 23d), (Location(-10, 45), 24d), (Location(2, -50), 28d), (Location(8, -120), 26d),
+      (Location(25, 45), 18d), (Location(30, 95), 16d), (Location(35, 135), 14d), (Location(40, 15), 12d),
+      (Location(45, 105), 10d), (Location(-60, 115), 5d),
+      (Location(-80, 133), -2d), (Location(85, 149), -5d))
+
+    val colorScale = Seq((-15d, Color(0, 0, 255)), (0d, Color(0, 255, 255)), (12d, Color(255, 255, 0)), (32d, Color(255, 0, 0)),
+      (60d, Color(255, 255, 255)))
+
+    val image = Visualization.visualize(stations, colorScale)
+
+    assert(image.width == 360 && image.height == 180)
+  }
   // ERROR 2
   /*
   [Test Description] [#2 - Raw data display] visualize
