@@ -80,6 +80,17 @@ class VisualizationTest extends FunSuite with Checkers {
     assert(Color(255, 0, 0) == interpolatedColor)
   }
 
+  test("Temperature closer to lower bound of lower of two bands should return colour closer to bottom-most colour than the top-most one") {
+
+    // 12  - 255, 255, 0
+    // 0   - 0, 255, 255
+    // -15 - 0, 0, 255
+    val colorScale = Seq((-15d, Color(0, 0, 255)), (0d, Color(0, 255, 255)), (12d, Color(255, 255, 0)))
+    val interpolatedColor = Visualization.interpolateColor(colorScale, -12d)
+
+    assert(interpolatedColor.red < 100 && interpolatedColor.green < 100 && interpolatedColor.blue > 128)
+  }
+
   test("Image with 12 stations is returned as expected") {
 
     val stations = Seq((Location(10, -10), 23d), (Location(-10, 45), 24d), (Location(2, -50), 28d), (Location(8, -120), 26d),

@@ -4,7 +4,9 @@ import java.awt.image.BufferedImage
 
 import com.sksamuel.scrimage.{Image, Pixel}
 import java.lang.Math._
+
 import scala.collection
+import scala.collection.parallel.mutable.ParArray
 
 /**
   * 2nd milestone: basic visualization
@@ -19,7 +21,7 @@ object Visualization {
   def predictTemperature(temperatures: Iterable[(Location, Double)], location: Location): Double = {
 
     val RadiusOfEarth = 6371d
-    val NumNeighbours = 5
+    val NumNeighbours = 3
     val Power = 2d
 
     def distanceBetweenGreatCircleMethod(loc1 : Location, loc2 : Location) =
@@ -34,7 +36,10 @@ object Visualization {
 
     val closest = findClosest(NumNeighbours).map(c => (c, abs(distanceBetweenGreatCircleMethod(c._1, location))))
 
-    closest.map(c => c._1._2 / pow(c._2, Power)).sum / closest.map(c => 1d / pow(c._2, Power)).sum
+    if (!closest.isEmpty && closest.head._1._1 == location)
+      closest.head._1._2
+    else
+      closest.map(c => c._1._2 / pow(c._2, Power)).sum / closest.map(c => 1d / pow(c._2, Power)).sum
   }
 
   /**
@@ -44,19 +49,12 @@ object Visualization {
     */
   def interpolateColor(points: Iterable[(Double, Color)], value: Double): Color = {
 
-    def findBounds(bounds: List[(Double, Color)], prevBound: (Double, Color), temp: Double): ((Double, Color), (Double, Color)) = {
-      if (temp >= bounds.head._1 && !bounds.tail.isEmpty)
-        findBounds(bounds.tail, bounds.head, temp)
-      /*else if (temp >= bounds.head._1 && bounds.tail.isEmpty)
-        (bounds.head, prevBound)*/
-      else
-        (bounds.head, prevBound)
-    }
+    val colorScaleList = points.toList
+    val colorScale = colorScaleList.zip(colorScaleList.tail)
 
-    val pointsArr = points.toArray
-    val safeTemp = max(pointsArr(0)._1, min(points.last._1, value))
+    val safeTemp = max(colorScaleList.head._1, min(points.last._1, value))
 
-    val (lower, upper) = findBounds(points.toList, points.head, safeTemp)
+    val (lower, upper) = colorScale.filter(s => safeTemp >= s._1._1 && safeTemp <= s._2._1).head
 
     val portion = (safeTemp - lower._1) / (upper._1 - lower._1)
 
@@ -77,18 +75,19 @@ object Visualization {
     val HalfWidth = Width / 2
     val HalfHeight = Height / 2
 
-    val pixels = new Array[Pixel](Width * Height)//.toSeq.par
+    val coords = new ParArray[(Int, Int)](Width * Height)
 
+    for (x <- 0 until Width; y <- 0 until Height)
+      coords(y * Width + x) = (y, x)
 
-    for (x <- 0 until Width; y <- 0 until Height) {
-      //val longit =
-      //val latit =
+    val pixels = coords.map { coord =>
+      val (y, x) = coord
       val temp = predictTemperature(temperatures, Location(HalfHeight - y, x - HalfWidth))
-      val colour = interpolateColor(colors, temp)
-      pixels(y * Width + x) = Pixel(colour.red, colour.green, colour.blue, 255)
-    }
+      val color = interpolateColor(colors, temp)
+      Pixel(color.red, color.green, color.blue, 255)
+    }.toArray
+
     Image(Width, Height, pixels)
   }
-
 }
 
