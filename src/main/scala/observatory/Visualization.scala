@@ -52,6 +52,8 @@ object Visualization {
     val colorScaleList = points.toList
     val colorScale = colorScaleList.zip(colorScaleList.tail)
 
+    if (colorScaleList.isEmpty) Color(0, 0, 0)
+
     val safeTemp = max(colorScaleList.head._1, min(points.last._1, value))
 
     val (lower, upper) = colorScale.filter(s => safeTemp >= s._1._1 && safeTemp <= s._2._1).head
