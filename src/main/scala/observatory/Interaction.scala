@@ -7,7 +7,7 @@ import com.sksamuel.scrimage.{Image, Pixel}
   */
 object Interaction {
 
-  /**
+  /** Returns the latitude and longitude of the top-left corner of the tile with the X and Y coordinates, per the zoom level.
     * @param zoom Zoom level
     * @param x X coordinate
     * @param y Y coordinate

@@ -105,32 +105,33 @@ class VisualizationTest extends FunSuite with Checkers {
 
     assert(image.width == 360 && image.height == 180)
   }
-  // ERROR 2
-  /*
-  [Test Description] [#2 - Raw data display] visualize
-  [Observed Error] ArrayIndexOutOfBoundsException was thrown during property evaluation.
-  Message: 64800
-  Occurred when passed generated values (
-    arg0 = -53.68870474015981,
-    arg1 = 8.718451005203349
-  )
-   */
-  // ERROR 3
-  /*
-  [Test Description] [#2 - Raw data display] predicted temperature at location z should be closer to known temperature at location x than to known temperature at location y, if z is closer (in distance) to x than y, and vice versa
-  [Observed Error] NaN did not equal 10.0 +- 1.0E-4 Incorrect predicted temperature at Location(0.0,0.0): NaN. Expected: 10.0
 
-   */
-  // ERROR 4
-  /*
-  Test Description] [#2 - Raw data display] exceeding the greatest value of a color scale should return the color associated with the greatest value
-  [Observed Error] GeneratorDrivenPropertyCheckFailedException was thrown during property evaluation.
-   (VisualizationTest.scala:35)
-    Falsified after 0 successful property evaluations.
-    Location: (VisualizationTest.scala:35)
-    Occurred when passed generated values (
-      arg0 = -1.0,
-      arg1 = 0.0
-    )
-   */
+  test("Single reading test") {
+
+    val stations = Seq((Location(1.0, -2.63222101E8), 2.6631255615362604E-250))
+
+    val colorScale = Seq((-15d, Color(0, 0, 255)), (0d, Color(0, 255, 255)), (12d, Color(255, 255, 0)), (32d, Color(255, 0, 0)),
+      (60d, Color(255, 255, 255)))
+
+    val image = Visualization.visualize(stations, colorScale)
+
+    assert(image.width == 360 && image.height == 180)
+  }
+
+  test("Generated property test") {
+
+    val colorScale = Seq((-15d, Color(0, 0, 255)), (0d, Color(0, 255, 255)), (12d, Color(255, 255, 0)), (32d, Color(255, 0, 0)),
+      (60d, Color(255, 255, 255)))
+
+    check({
+      (stationsParams: Iterable[(Int, Int, Double)]) => {
+
+        val stations = stationsParams.map(s => (Location(s._1, s._2), s._3))
+
+        val image = Visualization.visualize(stations, colorScale)
+
+        image.width == 360 && image.height == 180
+      }
+    }, minSuccessful(10), minSize(10), maxSize(10))
+  }
 }

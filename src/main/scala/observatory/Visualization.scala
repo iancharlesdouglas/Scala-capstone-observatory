@@ -23,20 +23,31 @@ object Visualization {
     val RadiusOfEarth = 6371d
     val NumNeighbours = 3
     val Power = 2d
+    val FocusRadius = 5
+
+    if (temperatures.size == 0) {
+      return 0d
+    }
 
     def distanceBetweenGreatCircleMethod(loc1 : Location, loc2 : Location) =
       acos(sin(toRadians(loc1.lat)) * sin(toRadians(loc2.lat)) +
         cos(toRadians(loc1.lat)) * cos(toRadians(loc2.lat)) * cos(toRadians(loc2.lon) - toRadians(loc1.lon))) * RadiusOfEarth
 
+    val (focusLonMin, focusLonMax, focusLatMin, focusLatMax) = (location.lon - FocusRadius, location.lon + FocusRadius,
+      location.lat - FocusRadius, location.lat + FocusRadius)
+    var stations = temperatures.filter(s => s._1.lon >= focusLonMin && s._1.lon <= focusLonMax &&
+      s._1.lat >= focusLatMin && s._1.lat <= focusLatMax)
+    if (stations.size < NumNeighbours) stations = temperatures
+
     def findClosest(neighbours : Int) : Iterable[(Location, Double)] =
-      temperatures.map(t => (t, abs(distanceBetweenGreatCircleMethod(t._1, location))))
+      stations.map(t => (t, abs(distanceBetweenGreatCircleMethod(t._1, location))))
         .toSeq.sortBy(_._2)
         .take(neighbours)
         .map(_._1)
 
     val closest = findClosest(NumNeighbours).map(c => (c, abs(distanceBetweenGreatCircleMethod(c._1, location))))
 
-    if (!closest.isEmpty && closest.head._1._1 == location)
+    if (!closest.isEmpty && (closest.head._1._1 == location || closest.head._2 == 0d))
       closest.head._1._2
     else
       closest.map(c => c._1._2 / pow(c._2, Power)).sum / closest.map(c => 1d / pow(c._2, Power)).sum
@@ -77,7 +88,7 @@ object Visualization {
     val HalfWidth = Width / 2
     val HalfHeight = Height / 2
 
-    val coords = new ParArray[(Int, Int)](Width * Height)
+    val coords = new Array[(Int, Int)](Width * Height)
 
     for (x <- 0 until Width; y <- 0 until Height)
       coords(y * Width + x) = (y, x)
@@ -87,7 +98,7 @@ object Visualization {
       val temp = predictTemperature(temperatures, Location(HalfHeight - y, x - HalfWidth))
       val color = interpolateColor(colors, temp)
       Pixel(color.red, color.green, color.blue, 255)
-    }.toArray
+    }
 
     Image(Width, Height, pixels)
   }
