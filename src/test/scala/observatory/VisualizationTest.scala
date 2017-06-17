@@ -132,6 +132,6 @@ class VisualizationTest extends FunSuite with Checkers {
 
         image.width == 360 && image.height == 180
       }
-    }, minSuccessful(10), minSize(10), maxSize(10))
+    }, minSize(10), maxSize(20), minSuccessful(20), workers(4))
   }
 }

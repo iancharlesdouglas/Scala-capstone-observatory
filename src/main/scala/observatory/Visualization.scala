@@ -25,9 +25,7 @@ object Visualization {
     val Power = 2d
     val FocusRadius = 5
 
-    if (temperatures.size == 0) {
-      return 0d
-    }
+    if (temperatures.size == 0) return 0d
 
     def distanceBetweenGreatCircleMethod(loc1 : Location, loc2 : Location) =
       acos(sin(toRadians(loc1.lat)) * sin(toRadians(loc2.lat)) +
@@ -63,17 +61,20 @@ object Visualization {
     val colorScaleList = points.toList
     val colorScale = colorScaleList.zip(colorScaleList.tail)
 
-    if (colorScaleList.isEmpty) Color(0, 0, 0)
+    if (!colorScaleList.isEmpty) {
 
-    val safeTemp = max(colorScaleList.head._1, min(points.last._1, value))
+      val safeTemp = max(colorScaleList.head._1, min(points.last._1, value))
 
-    val (lower, upper) = colorScale.filter(s => safeTemp >= s._1._1 && safeTemp <= s._2._1).head
+      val (lower, upper) = colorScale.filter(s => safeTemp >= s._1._1 && safeTemp <= s._2._1).head
 
-    val portion = (safeTemp - lower._1) / (upper._1 - lower._1)
+      val portion = (safeTemp - lower._1) / (upper._1 - lower._1)
 
-    Color(Math.round(portion * (upper._2.red - lower._2.red) + lower._2.red).toInt,
-      Math.round(portion * (upper._2.green - lower._2.green) + lower._2.green).toInt,
-      Math.round(portion * (upper._2.blue - lower._2.blue) + lower._2.blue).toInt)
+      Color(Math.round(portion * (upper._2.red - lower._2.red) + lower._2.red).toInt,
+        Math.round(portion * (upper._2.green - lower._2.green) + lower._2.green).toInt,
+        Math.round(portion * (upper._2.blue - lower._2.blue) + lower._2.blue).toInt)
+    } else {
+      Color(0, 0, 0)
+    }
   }
 
   /**
