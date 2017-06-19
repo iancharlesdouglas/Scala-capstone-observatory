@@ -34,4 +34,11 @@ class InteractionTest extends FunSuite with Checkers {
     val location = Interaction.tileLocation(3, 3, 5)
     assert(location.lon == -45d)
   }
+
+  test("Bounds checks") {
+    check((x: Int, y: Int) => {
+      val location = Interaction.tileLocation(3, x, y)
+      location.lon >= -180 && location.lon <= 180 && location.lat >= -90 && location.lat <= 90
+    }, maxSize(20), minSuccessful(10))
+  }
 }

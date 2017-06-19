@@ -29,7 +29,7 @@ class VisualizationTest extends FunSuite with Checkers {
 
     val midpointTemp = Visualization.predictTemperature(Seq(stationA, stationB), midpoint)
 
-    assert(midpointTemp == 10d)
+    assert(Math.abs(midpointTemp - 10d) < 0.3d)
   }
 
   test("Temperature of 50 degrees will have 255 for red and a proportionate amount of green and blue") {
@@ -118,7 +118,7 @@ class VisualizationTest extends FunSuite with Checkers {
     assert(image.width == 360 && image.height == 180)
   }
 
-  test("Generated property test") {
+  /*ignore("Generated stations test") {
 
     val colorScale = Seq((-15d, Color(0, 0, 255)), (0d, Color(0, 255, 255)), (12d, Color(255, 255, 0)), (32d, Color(255, 0, 0)),
       (60d, Color(255, 255, 255)))
@@ -133,5 +133,33 @@ class VisualizationTest extends FunSuite with Checkers {
         image.width == 360 && image.height == 180
       }
     }, minSize(10), maxSize(20), minSuccessful(20), workers(4))
+  }*/
+
+  test("Generated colour scale and stations test") {
+
+    check({
+      (stationsParams: Iterable[(Int, Int, Double)], colorParams: Iterable[(Double, Byte, Byte, Byte)]) => {
+
+        val stations = stationsParams.map(s => (Location(s._1, s._2), s._3))
+
+        val colorScale = colorParams.map(c => (c._1, Color(c._2 + 128, c._3 + 128, c._4 + 128))).toList.sortBy(_._1).toIterable
+
+        val image = Visualization.visualize(stations, colorScale)
+
+        image.width == 360 && image.height == 180
+      }
+    }, minSize(8), maxSize(20), minSuccessful(50),workers(4))
+  }
+
+  test("Known temp. NaN test") {
+
+    val stations = Seq((Location(2.12886296E8, 1.602617134E9), 7.66636799436318E18))
+
+    val colorScale = Seq((-15d, Color(0, 0, 255)), (0d, Color(0, 255, 255)), (12d, Color(255, 255, 0)), (32d, Color(255, 0, 0)),
+      (60d, Color(255, 255, 255)))
+
+    val image = Visualization.visualize(stations, colorScale)
+
+    assert(image.width == 360 && image.height == 180)
   }
 }
