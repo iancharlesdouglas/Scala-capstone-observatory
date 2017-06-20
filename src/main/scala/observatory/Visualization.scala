@@ -13,6 +13,28 @@ import scala.collection.parallel.mutable.ParArray
   */
 object Visualization {
 
+  val RadiusOfEarth = 6371d
+
+  def distanceBetweenGreatCircleMethod(loc1 : Location, loc2 : Location) = {
+    acos(sin(toRadians(loc1.lat)) * sin(toRadians(loc2.lat)) +
+      cos(toRadians(loc1.lat)) * cos(toRadians(loc2.lat)) * cos(toRadians(loc2.lon) - toRadians(loc1.lon))) * RadiusOfEarth
+  }
+
+  def distanceBetweenVincentyFormula(loc1: Location, loc2: Location) = {
+    val (lat1, lat2, lon1, lon2) = (toRadians(loc1.lat), toRadians(loc2.lat), toRadians(loc1.lon), toRadians(loc2.lon))
+    val diffLon = lon2 - lon1
+
+    val distance = atan2(
+      sqrt(pow(cos(lat2) * sin(diffLon), 2) + pow(cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(diffLon), 2)),
+      sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(diffLon)
+    ) * RadiusOfEarth * 1000
+
+    if (distance == Double.NaN)
+      1d
+    else
+      distance
+  }
+
   /**
     * @param temperatures Known temperatures: pairs containing a location and the temperature at this location
     * @param location Location where to predict the temperature
@@ -20,44 +42,30 @@ object Visualization {
     */
   def predictTemperature(temperatures: Iterable[(Location, Double)], location: Location): Double = {
 
-    val RadiusOfEarth = 6371d
-    val NumNeighbours = 3
+    val NumNeighbours = 5
     val Power = 2d
-    val FocusRadius = 5
+    /*val FocusRadius = 5
 
     if (temperatures.size == 0) return 0d
-
-    def distanceBetweenGreatCircleMethod(loc1 : Location, loc2 : Location) = {
-      acos(sin(toRadians(loc1.lat)) * sin(toRadians(loc2.lat)) +
-        cos(toRadians(loc1.lat)) * cos(toRadians(loc2.lat)) * cos(toRadians(loc2.lon) - toRadians(loc1.lon))) * RadiusOfEarth
-    }
-
-    def distanceBetweenVicentyFormula(loc1: Location, loc2: Location) = {
-      val (lat1, lat2, lon1, lon2) = (toRadians(loc1.lat), toRadians(loc2.lat), toRadians(loc1.lon), toRadians(loc2.lon))
-      val diffLon = lon2 - lon1
-      atan2(
-        sqrt(pow(cos(lat2) * sin(diffLon), 2) + pow(cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(diffLon), 2)),
-        sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(diffLon)
-      )
-    }
 
     val (focusLonMin, focusLonMax, focusLatMin, focusLatMax) = (location.lon - FocusRadius, location.lon + FocusRadius,
       location.lat - FocusRadius, location.lat + FocusRadius)
     var stations = temperatures.filter(s => s._1.lon >= focusLonMin && s._1.lon <= focusLonMax &&
       s._1.lat >= focusLatMin && s._1.lat <= focusLatMax)
-    if (stations.size < NumNeighbours) stations = temperatures
+    if (stations.size < NumNeighbours) stations = temperatures*/
 
-    def findClosest(neighbours : Int) : Iterable[((Location, Double), Double)] =
-      stations.map(t => (t, abs(distanceBetweenVicentyFormula(t._1, location))))
+    /*def findClosest(neighbours : Int) : Iterable[((Location, Double), Double)] =
+      temperatures/*stations*/.map(t => (t, abs(distanceBetweenVicentyFormula(t._1, location))))
         .toSeq.sortBy(_._2)
-        .take(neighbours)
-        //.map(_._1)
+        .take(neighbours)*/
 
-    val tempClosest = stations.map(t => (t, distanceBetweenVicentyFormula(t._1, location)))
+    val closest = temperatures.map(t => (t, abs(distanceBetweenVincentyFormula(t._1, location))))
+    .toSeq.sortBy(_._2)
+    .take(NumNeighbours)
 
-    val closest = findClosest(NumNeighbours)//.map(c => (c, abs(distanceBetweenGreatCircleMethod(c._1, location))))
+    //val closest = findClosest(NumNeighbours)//.map(c => (c, abs(distanceBetweenGreatCircleMethod(c._1, location))))
 
-    if (!closest.isEmpty && (closest.head._1._1 == location || closest.head._2 == 0d))
+    if (closest.size > 0 && (closest.head._1._1 == location || closest.head._2 == 0d))
       closest.head._1._2
     else
       closest.map(c => c._1._2 / pow(c._2, Power)).sum / closest.map(c => 1d / pow(c._2, Power)).sum
@@ -70,35 +78,34 @@ object Visualization {
     */
   def interpolateColor(points: Iterable[(Double, Color)], value: Double): Color = {
 
-    val colorScaleList = points.toList//.sortBy(_._1)
+    if (points.size == 0) return Color(0, 0, 0)
+    else if (points.size == 1) return points.head._2
 
-    if (!colorScaleList.isEmpty && !colorScaleList.tail.isEmpty) {
+    val scale = if (points.head._1 < points.last._1) points.toArray else points.toArray.sortBy(_._1)
 
-      val colorScale = colorScaleList.zip(colorScaleList.tail)
+    val scaleIndex = scale.indexWhere(value <= _._1)
 
-      val safeTemp = max(colorScaleList.head._1, min(points.last._1, value))
+    val safeTemp =
+      if (scaleIndex == -1)
+        scale.last._1
+      else if (scaleIndex == 0)
+        scale(0)._1
+      else
+        value
 
-      try {
-        val band = colorScale.filter(s => safeTemp >= s._1._1 && safeTemp <= s._2._1)
-        //if (band.isEmpty) return Color(0, 0, 0)
+    val upperIndex = if (scaleIndex == -1) scale.length - 1 else if (scaleIndex == 0) 1 else scaleIndex
+    val lowerIndex = if (upperIndex > 0) upperIndex - 1 else upperIndex
 
-        val (lower, upper) = band.head
+    val (lower, upper) = (scale(lowerIndex), scale(upperIndex))
 
-        val portion = (safeTemp - lower._1) / (upper._1 - lower._1)
+    val portion = (safeTemp - lower._1) / (upper._1 - lower._1)
 
-        Color(Math.round(portion * (upper._2.red - lower._2.red) + lower._2.red).toInt,
-          Math.round(portion * (upper._2.green - lower._2.green) + lower._2.green).toInt,
-          Math.round(portion * (upper._2.blue - lower._2.blue) + lower._2.blue).toInt)
-      } catch {
-        case e: java.util.NoSuchElementException => {
-          throw e
-        }
-      }
-    } else if (!colorScaleList.isEmpty) {
-      colorScaleList.head._2
-    } else {
-      Color(0, 0, 0)
-    }
+    def round(value: Double, decimalPlaces: Int) =
+      BigDecimal(value).setScale(decimalPlaces, BigDecimal.RoundingMode.HALF_UP).toDouble
+
+    Color(round(portion * (upper._2.red - lower._2.red) + lower._2.red, 0).toInt,
+      round(portion * (upper._2.green - lower._2.green) + lower._2.green, 0).toInt,
+      round(portion * (upper._2.blue - lower._2.blue) + lower._2.blue, 0).toInt)
   }
 
   /**
@@ -113,21 +120,27 @@ object Visualization {
     val HalfWidth = Width / 2
     val HalfHeight = Height / 2
 
-    val coords = new Array[(Int, Int)](Width * Height)
-
-    for (x <- 0 until Width; y <- 0 until Height)
-      coords(y * Width + x) = (y, x)
-
-    val pixels = coords.map { coord =>
-      val (y, x) = coord
-      if (x == 94 && y == 26){
-        var  ggg = 1
+    /*def pixelFrom(startX: Int, startY: Int, pixels: List[Pixel]): List[Pixel] = {
+      if (startX == Width && startY == Height)
+        pixels
+      else if (startX == Width)
+        pixelFrom(0, startY + 1, pixels)
+      else {
+        val temp = predictTemperature(temperatures, Location(HalfHeight - startY, startX - HalfWidth))
+        val color = interpolateColor(colors, temp)
+        pixelFrom(startX + 1, startY, pixels.::(Pixel(color.red, color.green, color.blue, 128)))
       }
+    }
+
+    Image(Width, Height, pixelFrom(0, 0, List()).toArray)*/
+
+    val pixels = (0 until Width * Height).map { index =>
+      val (y, x) = (index / Width, index % Width)
       val temp = predictTemperature(temperatures, Location(HalfHeight - y, x - HalfWidth))
       val color = interpolateColor(colors, temp)
       Pixel(color.red, color.green, color.blue, 255)
-    }
-//x=94 y=26
+    }.toArray
+
     Image(Width, Height, pixels)
   }
 }

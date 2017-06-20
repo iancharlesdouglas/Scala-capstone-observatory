@@ -21,7 +21,7 @@ object Interaction {
     val safeY = Math.min(Math.max(0, y), pixels)
 
     Location(lat = 180d / Math.PI * Math.atan(Math.sinh(Math.PI - (2d * Math.PI * safeY) / pixels)),
-      lon = safeX / pixels * 360d - 180)
+      lon = safeX / pixels * 360d - 180d)
   }
 
   /**
@@ -34,17 +34,19 @@ object Interaction {
     */
   def tile(temperatures: Iterable[(Location, Double)], colors: Iterable[(Double, Color)], zoom: Int, x: Int, y: Int): Image = {
 
-    val tilePixelX = x * 256
-    val tilePixelY = y * 256
-    val pixels = new Array[Pixel](256 * 256)
+    val Size = 256
+    val tilePixelX = x * Size
+    val tilePixelY = y * Size
+    val pixels = new Array[Pixel](Size * Size)
+    val mainTileLocation = tileLocation(zoom, x, y)
 
-    for (pixelY <- 0 to 255; pixelX <- 0 to 255) {
-      val pixelLocation = tileLocation(8, tilePixelX + pixelX, tilePixelY + pixelY)
-      val temperature = Visualization.predictTemperature(temperatures, pixelLocation)
+    for (pixelY <- 0 until Size; pixelX <- 0 until Size) {
+      val pixelLocation = tileLocation(zoom + 8, pixelX, pixelY)
+      val temperature = Visualization.predictTemperature(temperatures, Location(lat = pixelLocation.lat + mainTileLocation.lat, lon = pixelLocation.lon + mainTileLocation.lon))
       val color = Visualization.interpolateColor(colors, temperature)
-      pixels(pixelY * 256 + pixelX) = Pixel(color.red, color.green, color.blue, 128)
+      pixels(pixelY * Size + pixelX) = Pixel(color.red, color.green, color.blue, 128)
     }
-    Image(256, 256, pixels)
+    Image(Size, Size, pixels)
   }
 
   /**
@@ -58,7 +60,14 @@ object Interaction {
     yearlyData: Iterable[(Int, Data)],
     generateImage: (Int, Int, Int, Int, Data) => Unit
   ): Unit = {
-    ???
+    val bin = for {
+      (year, readings) <- yearlyData
+      zoom  <- 0 to 3
+      x <- 0 to Math.pow(2, zoom).toInt
+      y <- 0 to Math.pow(2, zoom).toInt
+    } {
+      generateImage(year, zoom, x, y, readings)
+    }
   }
 
 }

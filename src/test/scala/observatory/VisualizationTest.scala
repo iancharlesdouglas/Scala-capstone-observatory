@@ -29,7 +29,15 @@ class VisualizationTest extends FunSuite with Checkers {
 
     val midpointTemp = Visualization.predictTemperature(Seq(stationA, stationB), midpoint)
 
-    assert(Math.abs(midpointTemp - 10d) < 0.3d)
+    assert(Math.abs(midpointTemp - 10d) < 0.1d)
+  }
+
+  test("Points 1 degree apart will be approx. 111km apart") {
+
+    assert(Visualization.distanceBetweenGreatCircleMethod(Location(1, 0), Location(0, 0)).round == 111)
+
+    assert(Visualization.distanceBetweenGreatCircleMethod(Location(0, 1), Location(0, 0)).round == 111)
+
   }
 
   test("Temperature of 50 degrees will have 255 for red and a proportionate amount of green and blue") {
@@ -91,6 +99,62 @@ class VisualizationTest extends FunSuite with Checkers {
     assert(interpolatedColor.red < 100 && interpolatedColor.green < 100 && interpolatedColor.blue > 128)
   }
 
+  test("Colour interpolation works as expected") {
+
+    val colorScale = Seq((-60d, Color(0, 0, 0)),
+      (-50d, Color(33, 0, 107)),
+      (-27d, Color(255, 0, 255)),
+      (-15d, Color(0, 0, 255)),
+      (0d, Color(0, 255, 255)),
+      (12d, Color(255, 255, 0)),
+      (32d, Color(255, 0, 0)),
+      (60d, Color(255, 255, 255)))
+
+    var interpolatedColor = Visualization.interpolateColor(colorScale, -56.6666d)
+    assert(interpolatedColor == Color(11, 0, 36))
+
+    interpolatedColor = Visualization.interpolateColor(colorScale, -10d)
+    assert(interpolatedColor == Color(0, 85, 255))
+
+    interpolatedColor = Visualization.interpolateColor(colorScale, 39d)
+    assert(interpolatedColor == Color(255, 64, 64))
+  }
+
+  test("Color interpolation 2") {
+
+    val stations = List((Location(45.0, -90.0), 14.683824588037325),
+      (Location(-45.0, 0.0), 61.69359549202767))
+
+    val colors = List((14.683824588037325,Color(255,0,0)), (61.69359549202767,Color(0,0,255)))
+
+    val location = Location(-28.0, -176.0)
+
+    val temperature = Visualization.predictTemperature(stations, location)
+
+    val distances = stations.map(s => Visualization.distanceBetweenVincentyFormula(s._1, Location(-28.0, -176.0)))
+
+    val locationColor = Visualization.interpolateColor(colors, temperature)
+
+    val xxx = 1
+  }
+
+  /*test("Full colour scale with equatorial and subtropical temperatures") {
+
+    val colorScale = Seq((-60d, Color(0, 0, 0)),
+      (-50d, Color(33, 0, 107)),
+      (-27d, Color(255, 0, 255)),
+      (-15d, Color(0, 0, 255)),
+      (0d, Color(0, 255, 255)),
+      (12d, Color(255, 255, 0)),
+      (32d, Color(255, 0, 0)),
+      (60d, Color(255, 255, 255)))
+
+    val stations = Seq((Location(0, 0), 30d), (Location(-30, -150), -12d))
+
+    val predictedTemp = Visualization.predictTemperature(stations, Location(-27, -180))
+    val interpolatedColor = Visualization.interpolateColor(colorScale, predictedTemp)
+  }*/
+
   test("Image with 12 stations is returned as expected") {
 
     val stations = Seq((Location(10, -10), 23d), (Location(-10, 45), 24d), (Location(2, -50), 28d), (Location(8, -120), 26d),
@@ -104,6 +168,8 @@ class VisualizationTest extends FunSuite with Checkers {
     val image = Visualization.visualize(stations, colorScale)
 
     assert(image.width == 360 && image.height == 180)
+
+    image.output(new java.io.File("c:\\users\\Ian\\projects\\scala\\capstone\\x.png"))
   }
 
   test("Single reading test") {
@@ -148,7 +214,7 @@ class VisualizationTest extends FunSuite with Checkers {
 
         image.width == 360 && image.height == 180
       }
-    }, minSize(8), maxSize(20), minSuccessful(50),workers(4))
+    }, minSize(8), maxSize(20), minSuccessful(80),workers(4))
   }
 
   test("Known temp. NaN test") {

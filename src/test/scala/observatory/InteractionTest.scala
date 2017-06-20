@@ -41,4 +41,8 @@ class InteractionTest extends FunSuite with Checkers {
       location.lon >= -180 && location.lon <= 180 && location.lat >= -90 && location.lat <= 90
     }, maxSize(20), minSuccessful(10))
   }
+
+  test("Tiles for zoom") {
+
+  }
 }
