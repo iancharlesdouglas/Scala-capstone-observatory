@@ -8,7 +8,7 @@ import java.lang.Math._
   */
 object Visualization {
 
-  val RadiusOfEarth = 6371d
+  val RadiusOfEarth = 6371.0
 
   def distanceBetweenGreatCircleMethod(loc1 : Location, loc2 : Location) = {
 
@@ -16,10 +16,7 @@ object Visualization {
 
     val distance = acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(toRadians(loc2.lon) - toRadians(loc1.lon))) * RadiusOfEarth
 
-    if (distance == Double.NaN)
-      1d
-    else
-      distance
+    if (distance == Double.NaN) 1.0 else distance
   }
 
   def distanceBetweenVincentyFormula(loc1: Location, loc2: Location) = {
@@ -29,12 +26,9 @@ object Visualization {
     val distance = atan2(
       sqrt(pow(cos(lat2) * sin(diffLon), 2) + pow(cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(diffLon), 2)),
       sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(diffLon)
-    ) * RadiusOfEarth * 1000
+    ) * RadiusOfEarth
 
-    if (distance == Double.NaN)
-      1d
-    else
-      distance
+    if (distance == Double.NaN) 1.0 else distance
   }
 
   //lazy val
@@ -45,14 +39,14 @@ object Visualization {
     */
   def predictTemperature(temperatures: Iterable[(Location, Double)], location: Location): Double = {
 
-    val NumNeighbours = 3
-    val Power = 2d
+    val NumNeighbours = 9 //3
+    val Power = 2.0
 
     val closest = temperatures.map(t => (t, abs(distanceBetweenGreatCircleMethod(t._1, location))))
     .toArray.sortBy(_._2)
     .take(NumNeighbours)
 
-    if (closest.size > 0 && (closest.head._1._1 == location || closest.head._2 < 1d))
+    if (closest.size > 0 && (closest.head._1._1 == location || closest.head._2 <= 1d))
       closest.head._1._2
     else
       closest.map(c => c._1._2 / pow(c._2, Power)).sum / closest.map(c => 1d / pow(c._2, Power)).sum

@@ -16,13 +16,9 @@ object Interaction {
     */
   def tileLocation(zoom: Int, x: Int, y: Int): Location = {
 
-    val pixels = pow(2d, zoom)
+    val tiles = pow(2d, zoom)
 
-    //val safeX = min(max(0, x), pixels)
-    //val safeY = min(max(0, y), pixels)
-
-    Location(lat = 180d / Math.PI * Math.atan(Math.sinh(Math.PI - (2d * Math.PI * y) / pixels)),
-      lon = x / pixels * 360d - 180d)
+    Location(lat = atan(sinh(PI * (1.0 - 2.0 * y / tiles))) * 180.0 / PI, lon = x / tiles * 360.0 - 180.0)
   }
 
   /**
@@ -36,6 +32,7 @@ object Interaction {
   def tile(temperatures: Iterable[(Location, Double)], colors: Iterable[(Double, Color)], zoom: Int, x: Int, y: Int): Image = {
 
     val Size = 256
+    //System.out.println(s"Tile - zoom: $zoom; x: $x; y: $y")
 
     val pixels = (0 until Size * Size).toArray.par.map { index =>
       val (pixelY, pixelX) = (index / Size, index % Size)
