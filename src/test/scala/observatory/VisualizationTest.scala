@@ -138,23 +138,6 @@ class VisualizationTest extends FunSuite with Checkers {
     val xxx = 1
   }
 
-  /*test("Full colour scale with equatorial and subtropical temperatures") {
-
-    val colorScale = Seq((-60d, Color(0, 0, 0)),
-      (-50d, Color(33, 0, 107)),
-      (-27d, Color(255, 0, 255)),
-      (-15d, Color(0, 0, 255)),
-      (0d, Color(0, 255, 255)),
-      (12d, Color(255, 255, 0)),
-      (32d, Color(255, 0, 0)),
-      (60d, Color(255, 255, 255)))
-
-    val stations = Seq((Location(0, 0), 30d), (Location(-30, -150), -12d))
-
-    val predictedTemp = Visualization.predictTemperature(stations, Location(-27, -180))
-    val interpolatedColor = Visualization.interpolateColor(colorScale, predictedTemp)
-  }*/
-
   test("Image with 12 stations is returned as expected") {
 
     val stations = Seq((Location(10, -10), 23d), (Location(-10, 45), 24d), (Location(2, -50), 28d), (Location(8, -120), 26d),
@@ -169,7 +152,42 @@ class VisualizationTest extends FunSuite with Checkers {
 
     assert(image.width == 360 && image.height == 180)
 
-    image.output(new java.io.File("c:\\users\\Ian\\projects\\scala\\capstone\\x.png"))
+    //image.output(new java.io.File("c:\\users\\Ian\\projects\\scala\\capstone\\x.png"))
+  }
+
+  test("Color scale with match on a single scale entry boundary interpolates correctly") {
+
+    val colorScale = Seq((-60d, Color(0, 0, 0)),
+      (-50d, Color(33, 0, 107)),
+      (-27d, Color(255, 0, 255)),
+      (-15d, Color(0, 0, 255)),
+      (0d, Color(0, 255, 255)),
+      (12d, Color(255, 255, 0)),
+      (32d, Color(255, 0, 0)),
+      (60d, Color(255, 255, 255)))
+
+    val interpolatedColor = Visualization.interpolateColor(colorScale, -50d)
+
+    assert(interpolatedColor == Color(33, 0, 107))
+  }
+
+  ignore("Extraction data rendered as image") {
+
+    val extraction = Extraction.locateTemperatures(1975, "/stations.csv", "/1975.csv")
+    val readings = Extraction.locationYearlyAverageRecords(extraction)
+
+    val colorScale = Seq((-60d, Color(0, 0, 0)),
+      (-50d, Color(33, 0, 107)),
+      (-27d, Color(255, 0, 255)),
+      (-15d, Color(0, 0, 255)),
+      (0d, Color(0, 255, 255)),
+      (12d, Color(255, 255, 0)),
+      (32d, Color(255, 0, 0)),
+      (60d, Color(255, 255, 255)))
+
+    val image = Visualization.visualize(readings, colorScale)
+
+    image.output(new java.io.File("c:\\users\\Ian\\projects\\scala\\capstone\\1975.png"))
   }
 
   test("Single reading test") {

@@ -1,6 +1,7 @@
 package observatory
 
 import com.sksamuel.scrimage.{Image, Pixel}
+import Math._
 
 /**
   * 3rd milestone: interactive visualization
@@ -15,13 +16,13 @@ object Interaction {
     */
   def tileLocation(zoom: Int, x: Int, y: Int): Location = {
 
-    val pixels = Math.pow(2, zoom)
+    val pixels = pow(2d, zoom)
 
-    val safeX = Math.min(Math.max(0, x), pixels)
-    val safeY = Math.min(Math.max(0, y), pixels)
+    //val safeX = min(max(0, x), pixels)
+    //val safeY = min(max(0, y), pixels)
 
-    Location(lat = 180d / Math.PI * Math.atan(Math.sinh(Math.PI - (2d * Math.PI * safeY) / pixels)),
-      lon = safeX / pixels * 360d - 180d)
+    Location(lat = 180d / Math.PI * Math.atan(Math.sinh(Math.PI - (2d * Math.PI * y) / pixels)),
+      lon = x / pixels * 360d - 180d)
   }
 
   /**
@@ -35,17 +36,14 @@ object Interaction {
   def tile(temperatures: Iterable[(Location, Double)], colors: Iterable[(Double, Color)], zoom: Int, x: Int, y: Int): Image = {
 
     val Size = 256
-    val tilePixelX = x * Size
-    val tilePixelY = y * Size
-    val pixels = new Array[Pixel](Size * Size)
-    val mainTileLocation = tileLocation(zoom, x, y)
 
-    for (pixelY <- 0 until Size; pixelX <- 0 until Size) {
-      val pixelLocation = tileLocation(zoom + 8, pixelX, pixelY)
-      val temperature = Visualization.predictTemperature(temperatures, Location(lat = pixelLocation.lat + mainTileLocation.lat, lon = pixelLocation.lon + mainTileLocation.lon))
+    val pixels = (0 until Size * Size).toArray.par.map { index =>
+      val (pixelY, pixelX) = (index / Size, index % Size)
+      val pixelLocation = tileLocation(zoom + 8, pixelX + x * Size, pixelY + y * Size)
+      val temperature = Visualization.predictTemperature(temperatures, Location(pixelLocation.lat, pixelLocation.lon))
       val color = Visualization.interpolateColor(colors, temperature)
-      pixels(pixelY * Size + pixelX) = Pixel(color.red, color.green, color.blue, 128)
-    }
+      Pixel(color.red, color.green, color.blue, 128)
+    }.toArray
     Image(Size, Size, pixels)
   }
 
@@ -63,8 +61,8 @@ object Interaction {
     val bin = for {
       (year, readings) <- yearlyData
       zoom  <- 0 to 3
-      x <- 0 to Math.pow(2, zoom).toInt
-      y <- 0 to Math.pow(2, zoom).toInt
+      x <- 0 until Math.pow(2, zoom).toInt
+      y <- 0 until Math.pow(2, zoom).toInt
     } {
       generateImage(year, zoom, x, y, readings)
     }
