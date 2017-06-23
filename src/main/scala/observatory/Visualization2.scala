@@ -24,9 +24,10 @@ object Visualization2 {
     d01: Double,
     d10: Double,
     d11: Double
-  ): Double = {
-    ???
-  }
+  ): Double =
+    d00 * (1 - x) * (1 - y) + d10 * x * (1 - y) + d01 * (1 - x) * y + d11 * x * y
+
+    //f(x,y)\approx f(0,0)(1-x)(1-y)+f(1,0)x(1-y)+f(0,1)(1-x)y+f(1,1)xy.
 
   /**
     * @param grid Grid to visualize

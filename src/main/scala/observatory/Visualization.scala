@@ -19,6 +19,7 @@ object Visualization {
     if (distance == Double.NaN) 1.0 else distance
   }
 
+  // The Vincenty formula is compute-intensive and slow
   def distanceBetweenVincentyFormula(loc1: Location, loc2: Location) = {
     val (lat1, lat2, lon1, lon2) = (toRadians(loc1.lat), toRadians(loc2.lat), toRadians(loc1.lon), toRadians(loc2.lon))
     val diffLon = lon2 - lon1
